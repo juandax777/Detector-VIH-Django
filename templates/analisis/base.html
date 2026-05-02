@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block titulo %}Análisis de Lesiones Cutáneas{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            color: #fff;
+        }
+        .card-custom {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+        }
+        .btn-analizar {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            padding: 12px 40px;
+            font-size: 1.1rem;
+            border-radius: 30px;
+            transition: transform 0.3s;
+        }
+        .btn-analizar:hover {
+            transform: scale(1.05);
+        }
+        .navbar-custom {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        .progress-bar-custom {
+            border-radius: 10px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .progress-fill {
+            height: 30px;
+            border-radius: 10px;
+            transition: width 1s ease-in-out;
+            display: flex;
+            align-items: center;
+            padding-left: 10px;
+            font-weight: bold;
+        }
+        .alta { background: linear-gradient(90deg, #f7971e, #ff0844); }
+        .media { background: linear-gradient(90deg, #f7971e, #ffd200); }
+        .baja { background: linear-gradient(90deg, #11998e, #38ef7d); }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{% url 'analisis:subir_imagen' %}">
+                🔬 Análisis Cutáneo VIH
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{% url 'analisis:subir_imagen' %}">📤 Subir Imagen</a>
+                <a class="nav-link" href="{% url 'analisis:historial' %}">📋 Historial</a>
+                <a class="nav-link" href="{% url 'analisis:terminos' %}">📝 Terminos</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% block contenido %}{% endblock %}
+    </div>
+
+    <footer class="text-center py-4 mt-5" style="opacity: 0.5;">
+        <small>⚠️ Esta herramienta es solo de apoyo educativo. No reemplaza el diagnóstico médico profesional.</small>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+{% extends 'analisis/base.html' %}
+
+{% block titulo %}Subir Imagen - Análisis Cutáneo{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card-custom p-5 text-center">
+            <h2 class="mb-3">📷 Subir Imagen para Análisis</h2>
+            <p class="text-white-50 mb-4">
+                Sube una imagen de la lesión cutánea y el modelo de inteligencia artificial
+                analizará la similitud con enfermedades cutáneas asociadas al VIH.
+            </p>
+
+            {% if error %}
+            <div class="alert alert-danger" role="alert">
+                ❌ {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST" enctype="multipart/form-data" id="formAnalisis">
+                {% csrf_token %}
+
+                <div class="mb-4">
+                    <label for="id_imagen" class="form-label">Selecciona una imagen</label>
+                    {{ form.imagen }}
+                </div>
+
+                <!-- Preview de la imagen -->
+                <div class="mb-4" id="previewContainer" style="display: none;">
+                    <img id="previewImg" src="" alt="Preview"
+                         class="img-fluid rounded" style="max-height: 300px;">
+                </div>
+
+                <button type="submit" class="btn btn-analizar text-white" id="btnAnalizar">
+                    🔍 Analizar Imagen
+                </button>
+
+                <!-- Loading -->
+                <div id="loading" style="display: none;" class="mt-4">
+                    <div class="spinner-border text-light" role="status">
+                        <span class="visually-hidden">Analizando...</span>
+                    </div>
+                    <p class="mt-2">Analizando imagen con el modelo IA...</p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Preview de imagen
+    document.getElementById('id_imagen').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('previewImg').src = e.target.result;
+                document.getElementById('previewContainer').style.display = 'block';
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Loading al enviar
+    document.getElementById('formAnalisis').addEventListener('submit', function() {
+        document.getElementById('btnAnalizar').style.display = 'none';
+        document.getElementById('loading').style.display = 'block';
+    });
+</script>
+{% endblock %}

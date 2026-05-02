@@ -1,0 +1,46 @@
+{% extends 'analisis/base.html' %}
+
+{% block titulo %}Terminos y Tratamiento de Datos{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card-custom p-4 p-md-5">
+            <h2 class="mb-3">Terminos y condiciones de tratamiento de datos</h2>
+            <p class="text-white-50 mb-4">
+                Antes de usar la aplicacion, debes leer y aceptar este consentimiento.
+            </p>
+
+            {% if error %}
+            <div class="alert alert-warning" role="alert">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <div class="bg-dark bg-opacity-25 rounded p-3 mb-4" style="max-height: 320px; overflow-y: auto;">
+                <p><strong>1. Finalidad:</strong> La imagen enviada será procesada con el propósito de generar una estimación automatizada de apoyo educativo e informativo dentro de la plataforma.</p>
+                <p><strong>2. Datos tratados:</strong> La plataforma podrá almacenar la imagen cargada, la fecha de uso y el resultado del análisis en el historial asociado al usuario, con el fin de permitir la consulta posterior y el correcto funcionamiento del servicio.</p>
+                <p><strong>3. Alcance del resultado:</strong> El análisis generado por la herramienta es únicamente orientativo y no reemplaza la valoración, diagnóstico, tratamiento o concepto emitido por un profesional médico o especialista de la salud.</p>
+                <p><strong>4. Uso responsable:</strong> El usuario se compromete a utilizar la aplicación de forma adecuada y a no cargar imágenes que contengan datos personales innecesarios, información sensible no requerida o contenido que no esté relacionado con la finalidad de la herramienta.</p>
+                <p><strong>5. Seguridad y confidencialidad:</strong> Se aplicarán medidas razonables de seguridad para proteger la información tratada. Sin embargo, el usuario reconoce que ningún sistema informático es completamente infalible y acepta hacer un uso prudente de la plataforma.</p>
+                <p><strong>6. Consentimiento:</strong> Al aceptar estos términos, autorizas el tratamiento de los datos cargados para el funcionamiento de la aplicación, la generación del análisis automatizado y el almacenamiento del historial dentro de la plataforma.</p>
+                <p><strong>7. Revocación y derechos del usuario:</strong> Podrás solicitar la eliminación de tus datos o ejercer los derechos que correspondan conforme a la normativa aplicable, a través de los canales de contacto definidos por la plataforma.</p>
+            </div>
+
+            <form method="post" action="{% url 'analisis:aceptar_terminos' %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next }}">
+
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="id_acepto" name="acepto" required>
+                    <label class="form-check-label" for="id_acepto">
+                        He leido y acepto los terminos y el tratamiento de datos.
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-analizar text-white">Continuar a la aplicacion</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

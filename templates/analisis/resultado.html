@@ -1,0 +1,100 @@
+{% extends 'analisis/base.html' %}
+
+{% block titulo %}Resultado del Análisis{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="card-custom p-5">
+            <h2 class="text-center mb-4">📊 Resultado del Análisis</h2>
+
+            <div class="row mb-4">
+                <!-- Imagen analizada -->
+                <div class="col-md-5 text-center mb-3">
+                    <h5>Imagen Analizada</h5>
+                    <img src="{{ imagen.imagen.url }}" alt="Imagen analizada"
+                         class="img-fluid rounded" style="max-height: 300px;">
+                </div>
+
+                <!-- Diagnóstico principal -->
+                <div class="col-md-7">
+                    <h5>Diagnóstico Principal</h5>
+                    <div class="card-custom p-4 mb-3">
+                        <h3 class="text-warning">{{ resultado.diagnostico }}</h3>
+                        <div class="progress-bar-custom mt-3">
+                            <div class="progress-fill {% if resultado.confianza > 70 %}alta{% elif resultado.confianza > 40 %}media{% else %}baja{% endif %}"
+                                 style="width: {{ resultado.confianza }}%;">
+                                {{ resultado.confianza }}%
+                            </div>
+                        </div>
+                        <small class="text-white-50 mt-2 d-block">
+                            Nivel de similitud / confianza del modelo
+                        </small>
+
+                        {% if resultado.ratio is not None %}
+                        <hr class="my-3" style="border-color: rgba(255,255,255,0.2);">
+                        <p class="mb-1"><strong>Porcentaje de piel afectada por VIH:</strong> {{ resultado.ratio }}%</p>
+                        <p class="mb-1"><strong>Nivel:</strong> {{ resultado.nivel }}</p>
+                        <small class="text-white-50 d-block">{{ resultado.descripcion }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {% if resultado.overlay_combined_path %}
+            <h5 class="mb-3">🖼️ Visualización de Segmentación</h5>
+            <div class="row mb-4">
+                <div class="col-md-4 text-center mb-3">
+                    <p class="mb-2">VIH (rojo)</p>
+                    <img src="{{ resultado.overlay_vih_path }}" alt="Overlay VIH" class="img-fluid rounded">
+                </div>
+                <div class="col-md-4 text-center mb-3">
+                    <p class="mb-2">Piel (naranja)</p>
+                    <img src="{{ resultado.overlay_skin_path }}" alt="Overlay piel" class="img-fluid rounded">
+                </div>
+                <div class="col-md-4 text-center mb-3">
+                    <p class="mb-2">Combinado</p>
+                    <img src="{{ resultado.overlay_combined_path }}" alt="Overlay combinado" class="img-fluid rounded">
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-4"><strong>VIH px:</strong> {{ resultado.vih_px }}</div>
+                <div class="col-md-4"><strong>Piel px:</strong> {{ resultado.skin_px }}</div>
+                <div class="col-md-4"><strong>Overlap px:</strong> {{ resultado.overlap_px }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Todas las predicciones -->
+            <h5 class="mb-3">📈 Similitud con todas las categorías</h5>
+            {% for pred in resultado.todas_las_predicciones %}
+            <div class="mb-2">
+                <div class="d-flex justify-content-between">
+                    <span>{{ pred.clase }}</span>
+                    <span class="fw-bold">{{ pred.probabilidad }}%</span>
+                </div>
+                <div class="progress-bar-custom">
+                    <div class="progress-fill {% if pred.probabilidad > 70 %}alta{% elif pred.probabilidad > 40 %}media{% else %}baja{% endif %}"
+                         style="width: {{ pred.probabilidad }}%; height: 20px; font-size: 0.8rem;">
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Advertencia -->
+            <div class="alert alert-warning mt-4" role="alert" style="background: rgba(255,193,7,0.2); border-color: rgba(255,193,7,0.3); color: #fff;">
+                ⚠️ <strong>Importante:</strong> Este resultado es generado por un modelo de inteligencia artificial
+                y tiene fines educativos. <strong>NO reemplaza el diagnóstico de un profesional médico.</strong>
+                Consulta siempre a un dermatólogo o especialista.
+            </div>
+
+            <!-- Botón para nuevo análisis -->
+            <div class="text-center mt-4">
+                <a href="{% url 'analisis:subir_imagen' %}" class="btn btn-analizar text-white">
+                    🔄 Realizar Nuevo Análisis
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

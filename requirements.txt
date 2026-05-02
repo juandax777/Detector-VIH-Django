@@ -1,0 +1,6 @@
+# Dependencias mínimas para ejecutar la app Django
+Django==6.0.2
+Pillow==11.3.0
+numpy==2.3.5
+inference-sdk==1.2.3
+

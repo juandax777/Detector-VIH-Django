@@ -1,0 +1,27 @@
+# Entorno local
+.env
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django
+db.sqlite3
+media/
+staticfiles/
+
+# IDE / sistema
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Modelos grandes o privados
+# Quita este patron si decides versionar modelos entrenados.
+*.keras
+*.h5
+*.pkl
