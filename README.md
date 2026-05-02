@@ -11,6 +11,7 @@ Aplicacion Django para cargar imagenes dermatologicas, analizarlas con modelos d
 - Inferencia con dos modelos de Roboflow: lesion VIH y piel.
 - Calculo de porcentaje de piel afectada y nivel de severidad configurable.
 - Generacion de overlays visuales para VIH, piel y resultado combinado.
+- Subida de imagen original y overlays a Supabase Storage.
 - Historial de analisis en base de datos.
 - Administracion de resultados desde Django Admin.
 
@@ -58,13 +59,47 @@ SECRET_KEY=change-me
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 
+DATABASE_URL=
+DB_SSL_REQUIRE=True
+DB_CONN_MAX_AGE=60
+
 ROBOFLOW_API_KEY=
 ROBOFLOW_API_URL=https://serverless.roboflow.com
 ROBOFLOW_VIH_MODEL_ID=proyecto-de-vih/1
 ROBOFLOW_SKIN_MODEL_ID=proyecto-de-vih/2
+
+SUPABASE_URL=https://<tu-proyecto>.supabase.co
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_<tu_clave>
+SUPABASE_BUCKET=VIH
+SUPABASE_UPLOAD_TIMEOUT=30
+MAX_UPLOAD_SIZE_MB=10
 ```
 
 Los umbrales de clasificacion tambien se manejan por `.env`, para evitar cambiar codigo cuando se ajusta la sensibilidad del modelo.
+
+### Supabase Storage
+
+El proyecto usa Supabase para guardar:
+
+- la imagen original enviada por el usuario;
+- los overlays generados por el analisis;
+- las URLs publicas que luego se guardan en la base de datos local.
+
+Requisitos en Supabase:
+
+1. Crear un bucket con el mismo nombre definido en `SUPABASE_BUCKET`.
+2. Configurarlo como **publico** para que el navegador pueda cargar las imagenes con una URL directa.
+3. Verificar que la `SUPABASE_PUBLISHABLE_KEY` tenga permiso de escritura sobre ese bucket.
+
+Flujo de subida implementado en la app:
+
+1. El usuario sube una imagen desde el formulario.
+2. Django envia el archivo original a Supabase Storage.
+3. Se ejecuta el analisis con Roboflow.
+4. Los overlays generados se suben tambien a Supabase.
+5. En la BD local se guardan la URL publica y la ruta interna de cada archivo.
+
+Si Supabase responde con error, la vista muestra un mensaje de falló al analizar/subir la imagen y no deja un registro parcial.
 
 ## Instalacion local
 
@@ -94,6 +129,7 @@ Este proyecto usa SQLite como base de datos local. En Django, esto significa que
 - **Para que sirve en este proyecto:** guardar el historial de analisis, usuarios del admin, sesiones y control de migraciones.
 - **Donde se configura:** en `VIH_base/settings.py`, dentro de `DATABASES`, con `ENGINE = django.db.backends.sqlite3` y `NAME = BASE_DIR / 'db.sqlite3'`.
 - **Cuando se crea:** al ejecutar `python manage.py migrate` por primera vez.
+- **En pruebas:** `python manage.py test` usa SQLite para no depender de la base remota aunque exista `DATABASE_URL`.
 - **Que tablas tendras (ejemplos):** `analisis_app_imagenanalisis`, `auth_user`, `django_migrations`, `django_session`, `django_admin_log`.
 - **Se sube a Git?:** no. `db.sqlite3` contiene datos locales y normalmente se ignora en `.gitignore`.
 
@@ -142,8 +178,16 @@ python manage.py migrate
 
 ## Verificacion
 
-Comando recomendado despues de cambios:
+Comandos recomendados despues de cambios:
 
 ```powershell
 python manage.py check
+python manage.py test analisis_app
+```
+
+Si tambien cambiaste configuracion de base de datos o migraciones, ejecuta adicionalmente:
+
+```powershell
+python manage.py showmigrations
+python manage.py migrate
 ```

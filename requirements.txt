@@ -1,6 +1,8 @@
 # Dependencias mínimas para ejecutar la app Django
 Django==6.0.2
+dj-database-url==3.0.1
 Pillow==11.3.0
 numpy==2.3.5
 inference-sdk==1.2.3
-
+psycopg[binary]==3.3.2
+requests==2.32.5

@@ -1,14 +1,19 @@
-from django.test import TestCase, Client
+from unittest.mock import Mock, patch
+
+from django.test import TestCase, Client, override_settings
+from django.utils.datastructures import MultiValueDict
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 from PIL import Image
 import io
+from requests.exceptions import RequestException
 
 from .views import TERMINOS_SESSION_KEY
 from .models import ImagenAnalisis
 from .forms import ImagenForm
+from .supabase_storage import SupabaseStorageError, public_url, upload_bytes
 from .predictor import (
-    decode_b64, _mask_from_polygon, _resize_mask,
+    decode_b64,
     _get_float_setting, _get_int_setting, _aplica_umbral_alerta,
     _clasificar_ratio, PredictorError
 )
@@ -85,12 +90,12 @@ class ImagenFormTests(TestCase):
     def test_formulario_valido(self):
         """Verificar que el formulario es válido con una imagen"""
         imagen = self._crear_imagen_test()
-        form = ImagenForm(data={}, files={'imagen': imagen})
+        form = ImagenForm(data={}, files=MultiValueDict({'imagen': [imagen]}))
         self.assertTrue(form.is_valid())
 
     def test_formulario_sin_imagen(self):
         """Verificar que el formulario es inválido sin imagen"""
-        form = ImagenForm(data={}, files={})
+        form = ImagenForm(data={}, files=MultiValueDict())
         self.assertFalse(form.is_valid())
         self.assertIn('imagen', form.errors)
 
@@ -105,7 +110,7 @@ class ImagenFormTests(TestCase):
             uploaded = SimpleUploadedFile(f'test.{formato.lower()}',
                                          imagen_io.getvalue(),
                                          content_type=f'image/{formato.lower()}')
-            form = ImagenForm(data={}, files={'imagen': uploaded})
+            form = ImagenForm(data={}, files=MultiValueDict({'imagen': [uploaded]}))
             self.assertTrue(form.is_valid(), f"Falló para formato {formato}")
 
 
@@ -181,6 +186,157 @@ class SubirImagenViewTests(TestCase):
         respuesta = self.client.post(reverse('analisis:subir_imagen'), {})
         self.assertEqual(respuesta.status_code, 200)
         self.assertTemplateUsed(respuesta, 'analisis/upload.html')
+
+
+class SupabaseStorageTests(TestCase):
+    """Pruebas para el almacenamiento en Supabase"""
+
+    @override_settings(
+        SUPABASE_URL='https://demo.supabase.co',
+        SUPABASE_PUBLISHABLE_KEY='anon-key',
+        SUPABASE_BUCKET='VIH',
+        SUPABASE_UPLOAD_TIMEOUT=12,
+    )
+    def test_public_url_arma_la_ruta_publica(self):
+        esperado = 'https://demo.supabase.co/storage/v1/object/public/VIH/originales/2026/05/imagen.png'
+        self.assertEqual(public_url('originales/2026/05/imagen.png'), esperado)
+
+    @override_settings(
+        SUPABASE_URL='https://demo.supabase.co',
+        SUPABASE_PUBLISHABLE_KEY='anon-key',
+        SUPABASE_BUCKET='VIH',
+        SUPABASE_UPLOAD_TIMEOUT=12,
+    )
+    @patch('analisis_app.supabase_storage.requests.post')
+    def test_upload_bytes_exitoso(self, mock_post):
+        mock_post.return_value = Mock(status_code=201, text='created', reason='Created')
+
+        resultado = upload_bytes('originales/2026/05/imagen.png', b'datos', 'image/png')
+
+        self.assertEqual(resultado['path'], 'originales/2026/05/imagen.png')
+        self.assertEqual(resultado['url'], public_url('originales/2026/05/imagen.png'))
+        self.assertEqual(mock_post.call_args.args[0], 'https://demo.supabase.co/storage/v1/object/VIH/originales/2026/05/imagen.png')
+        self.assertEqual(mock_post.call_args.kwargs['timeout'], 12)
+        self.assertEqual(mock_post.call_args.kwargs['data'], b'datos')
+        self.assertEqual(mock_post.call_args.kwargs['headers']['Content-Type'], 'image/png')
+
+    @override_settings(
+        SUPABASE_URL='https://demo.supabase.co',
+        SUPABASE_PUBLISHABLE_KEY='anon-key',
+        SUPABASE_BUCKET='VIH',
+        SUPABASE_UPLOAD_TIMEOUT=12,
+    )
+    @patch('analisis_app.supabase_storage.requests.post')
+    def test_upload_bytes_rechazo_http(self, mock_post):
+        mock_post.return_value = Mock(status_code=400, text='bad request', reason='Bad Request')
+
+        with self.assertRaises(SupabaseStorageError) as ctx:
+            upload_bytes('originales/2026/05/imagen.png', b'datos', 'image/png')
+
+        self.assertIn('Supabase rechazo la subida (400)', str(ctx.exception))
+
+    @override_settings(
+        SUPABASE_URL='',
+        SUPABASE_PUBLISHABLE_KEY='',
+        SUPABASE_BUCKET='VIH',
+    )
+    def test_upload_bytes_sin_configuracion(self):
+        with self.assertRaises(SupabaseStorageError):
+            upload_bytes('originales/2026/05/imagen.png', b'datos')
+
+    @override_settings(
+        SUPABASE_URL='https://demo.supabase.co',
+        SUPABASE_PUBLISHABLE_KEY='anon-key',
+        SUPABASE_BUCKET='VIH',
+        SUPABASE_UPLOAD_TIMEOUT=12,
+    )
+    @patch('analisis_app.supabase_storage.requests.post', side_effect=RequestException('sin conexion'))
+    def test_upload_bytes_error_de_red(self, mock_post):
+        with self.assertRaises(SupabaseStorageError) as ctx:
+            upload_bytes('originales/2026/05/imagen.png', b'datos', 'image/png')
+
+        self.assertIn('No se pudo conectar con Supabase Storage', str(ctx.exception))
+
+
+class SubirImagenSupabaseIntegrationTests(TestCase):
+    """Pruebas de integracion de la vista con Supabase"""
+
+    def setUp(self):
+        self.client = Client()
+        session = self.client.session
+        session[TERMINOS_SESSION_KEY] = True
+        session.save()
+
+    def _crear_imagen_test(self, nombre='test.jpg'):
+        imagen = Image.new('RGB', (100, 100), color='purple')
+        imagen_io = io.BytesIO()
+        imagen.save(imagen_io, format='JPEG')
+        imagen_io.seek(0)
+        return SimpleUploadedFile(nombre, imagen_io.getvalue(), content_type='image/jpeg')
+
+    @override_settings(
+        SUPABASE_URL='https://demo.supabase.co',
+        SUPABASE_PUBLISHABLE_KEY='anon-key',
+        SUPABASE_BUCKET='VIH',
+        SUPABASE_UPLOAD_TIMEOUT=12,
+    )
+    @patch('analisis_app.views.upload_django_file')
+    @patch('analisis_app.views._guardar_temporal_para_analisis')
+    @patch('analisis_app.views.predecir')
+    @patch('analisis_app.views.upload_bytes')
+    @patch('analisis_app.views.build_storage_path')
+    def test_post_guarda_urls_y_rutas_de_supabase(
+        self,
+        mock_build_storage_path,
+        mock_upload_bytes,
+        mock_predecir,
+        mock_guardar_temporal,
+        mock_upload_django_file,
+    ):
+        mock_upload_django_file.return_value = {
+            'path': 'originales/2026/05/original.jpg',
+            'url': 'https://demo.supabase.co/storage/v1/object/public/VIH/originales/2026/05/original.jpg',
+        }
+        mock_guardar_temporal.return_value = 'C:\\temp\\analisis.jpg'
+        mock_predecir.return_value = {
+            'diagnostico': 'Positivo',
+            'confianza': 91.2,
+            'overlay_vih_file': {'filename': 'vih.png', 'content': b'vih', 'content_type': 'image/png'},
+            'overlay_skin_file': {'filename': 'skin.png', 'content': b'skin', 'content_type': 'image/png'},
+            'overlay_combined_file': {'filename': 'combined.png', 'content': b'combined', 'content_type': 'image/png'},
+        }
+
+        rutas = iter([
+            'overlays/vih-001.png',
+            'overlays/skin-001.png',
+            'overlays/combined-001.png',
+        ])
+        mock_build_storage_path.side_effect = lambda folder, original_name, extension=None: next(rutas)
+        mock_upload_bytes.side_effect = lambda path, content, content_type='application/octet-stream': {
+            'path': path,
+            'url': f'https://demo.supabase.co/storage/v1/object/public/VIH/{path}',
+        }
+
+        respuesta = self.client.post(reverse('analisis:subir_imagen'), {
+            'imagen': self._crear_imagen_test(),
+        })
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTemplateUsed(respuesta, 'analisis/resultado.html')
+
+        analisis = ImagenAnalisis.objects.latest('pk')
+        self.assertEqual(analisis.imagen_url, mock_upload_django_file.return_value['url'])
+        self.assertEqual(analisis.imagen_storage_path, mock_upload_django_file.return_value['path'])
+        self.assertEqual(analisis.overlay_vih_storage_path, 'overlays/vih-001.png')
+        self.assertEqual(analisis.overlay_vih_url, 'https://demo.supabase.co/storage/v1/object/public/VIH/overlays/vih-001.png')
+        self.assertEqual(analisis.overlay_skin_storage_path, 'overlays/skin-001.png')
+        self.assertEqual(analisis.overlay_combined_storage_path, 'overlays/combined-001.png')
+        self.assertEqual(analisis.resultado, 'Positivo')
+        self.assertEqual(analisis.confianza, 91.2)
+        self.assertEqual(mock_upload_bytes.call_count, 3)
+        self.assertEqual(mock_build_storage_path.call_count, 3)
+        self.assertIn('overlay_combined_path', analisis.resultado_detalle)
+        self.assertTrue(analisis.resultado_detalle['overlay_combined_path'].startswith('https://demo.supabase.co/storage/v1/object/public/VIH/'))
 
 
 class HistorialViewTests(TestCase):

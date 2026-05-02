@@ -25,7 +25,7 @@
                         <tr>
                             <td>{{ item.id }}</td>
                             <td>
-                                <img src="{{ item.imagen.url }}" alt="Análisis {{ item.id }}"
+                                <img src="{{ item.imagen_public_url }}" alt="Análisis {{ item.id }}"
                                      style="max-height: 60px; border-radius: 8px;">
                             </td>
                             <td>{{ item.resultado|default:"Sin resultado" }}</td>

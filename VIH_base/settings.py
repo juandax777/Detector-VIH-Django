@@ -1,4 +1,5 @@
 ﻿import os
+import sys
 from pathlib import Path
 
 
@@ -92,6 +93,23 @@ DATABASES = {
     }
 }
 
+DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
+RUNNING_TESTS = 'test' in sys.argv
+if DATABASE_URL and not RUNNING_TESTS:
+    try:
+        import dj_database_url
+    except ImportError as exc:
+        raise ImportError(
+            'DATABASE_URL esta configurado, pero falta instalar dj-database-url. '
+            'Ejecuta pip install -r requirements.txt.'
+        ) from exc
+
+    DATABASES['default'] = dict(dj_database_url.parse(
+        DATABASE_URL,
+        conn_max_age=int(os.environ.get('DB_CONN_MAX_AGE', '60')),
+        ssl_require=_env_bool('DB_SSL_REQUIRE', True),
+    ))
+
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -111,6 +129,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Supabase Storage. Se usa una publishable key porque la app no tendra login.
+SUPABASE_URL = os.environ.get('SUPABASE_URL', '').rstrip('/')
+SUPABASE_PUBLISHABLE_KEY = os.environ.get('SUPABASE_PUBLISHABLE_KEY', '')
+SUPABASE_BUCKET = os.environ.get('SUPABASE_BUCKET', 'VIH')
+SUPABASE_UPLOAD_TIMEOUT = int(os.environ.get('SUPABASE_UPLOAD_TIMEOUT', '30'))
+MAX_UPLOAD_SIZE_MB = int(os.environ.get('MAX_UPLOAD_SIZE_MB', '10'))
 
 # Configuracion Roboflow. Los secretos deben vivir en .env o variables del sistema.
 ROBOFLOW_API_KEY = os.environ.get('ROBOFLOW_API_KEY', '')

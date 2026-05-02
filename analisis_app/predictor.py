@@ -227,15 +227,15 @@ def overlay_two(image_rgb, vih_mask, skin_mask):
 
 
 def _save_overlay(image_pil, source_image_path, suffix):
-    os.makedirs(os.path.join(settings.MEDIA_ROOT, 'overlays'), exist_ok=True)
-
     base_name = os.path.splitext(os.path.basename(source_image_path))[0]
     file_name = f"{base_name}_{suffix}_{uuid.uuid4().hex[:8]}.png"
-    abs_path = os.path.join(settings.MEDIA_ROOT, 'overlays', file_name)
-    image_pil.save(abs_path, format='PNG')
-
-    media_url = settings.MEDIA_URL if settings.MEDIA_URL.endswith('/') else f"{settings.MEDIA_URL}/"
-    return f"{media_url}overlays/{file_name}"
+    buffer = io.BytesIO()
+    image_pil.save(buffer, format='PNG')
+    return {
+        'filename': file_name,
+        'content': buffer.getvalue(),
+        'content_type': 'image/png',
+    }
 
 
 def _get_float_setting(name, default_value):
@@ -338,9 +338,9 @@ def analizar_imagen_con_roboflow(image_path):
 
     nivel, descripcion = _clasificar_ratio(ratio, supera_umbral_alerta)
 
-    overlay_vih_path = _save_overlay(overlay_single(base_np, vih_mask, color=(255, 0, 0), alpha=0.55), image_path, 'vih')
-    overlay_skin_path = _save_overlay(overlay_single(base_np, skin_mask, color=(255, 165, 0), alpha=0.35), image_path, 'skin')
-    overlay_combined_path = _save_overlay(overlay_two(base_np, vih_mask, skin_mask), image_path, 'combined')
+    overlay_vih_file = _save_overlay(overlay_single(base_np, vih_mask, color=(255, 0, 0), alpha=0.55), image_path, 'vih')
+    overlay_skin_file = _save_overlay(overlay_single(base_np, skin_mask, color=(255, 165, 0), alpha=0.35), image_path, 'skin')
+    overlay_combined_file = _save_overlay(overlay_two(base_np, vih_mask, skin_mask), image_path, 'combined')
 
     if supera_umbral_alerta:
         diagnostico = 'Positivo - Posible lesion asociada al VIH detectada'
@@ -362,9 +362,9 @@ def analizar_imagen_con_roboflow(image_path):
         'skin_conf_mean': round(float(skin_conf_mean), 4),
         'nivel': nivel,
         'descripcion': descripcion,
-        'overlay_vih_path': overlay_vih_path,
-        'overlay_skin_path': overlay_skin_path,
-        'overlay_combined_path': overlay_combined_path,
+        'overlay_vih_file': overlay_vih_file,
+        'overlay_skin_file': overlay_skin_file,
+        'overlay_combined_file': overlay_combined_file,
         'debug': {
             'vih': vih_meta,
             'skin': skin_meta,
