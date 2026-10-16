@@ -272,12 +272,12 @@ def _clasificar_ratio(ratio, supera_umbral_alerta):
     fase_mediana_max = max(fase_mediana_max, fase_baja_max)
 
     if (ratio <= fase_nula_max) or (not supera_umbral_alerta):
-        return 'Nula', 'Sin evidencia consistente de lesion VIH sobre piel (filtrado por umbral).'
+        return 'Sin hallazgos relevantes', 'No se identificaron características visuales que superen los umbrales configurados.'
     if ratio <= fase_baja_max:
-        return 'Baja', 'Area VIH baja en proporcion al area de piel detectada.'
+        return 'Baja', 'Área estimada de patrones baja en proporción al área de piel detectada.'
     if ratio <= fase_mediana_max:
-        return 'Mediana', 'Area VIH mediana respecto al area de piel detectada.'
-    return 'Alta', 'Area VIH alta respecto al area de piel detectada.'
+        return 'Mediana', 'Área estimada de patrones mediana respecto al área de piel detectada.'
+    return 'Alta', 'Área estimada de patrones alta respecto al área de piel detectada.'
 
 
 def analizar_imagen_con_roboflow(image_path):
@@ -343,10 +343,10 @@ def analizar_imagen_con_roboflow(image_path):
     overlay_combined_file = _save_overlay(overlay_two(base_np, vih_mask, skin_mask), image_path, 'combined')
 
     if supera_umbral_alerta:
-        diagnostico = 'Positivo - Posible lesion asociada al VIH detectada'
+        diagnostico = 'Se identificaron características visuales compatibles con la categoría analizada.'
         confianza = round(float(vih_conf_mean) * 100.0, 2)
     else:
-        diagnostico = 'Negativo - Hallazgo por debajo de umbral clinico configurable'
+        diagnostico = 'No se identificaron características visuales que superen los umbrales configurados.'
         # Evita mostrar una confianza alta cuando el hallazgo no supera filtros minimos.
         confianza = 0.0
 
@@ -381,9 +381,9 @@ def analizar_imagen_con_roboflow(image_path):
         'confianza_modelo_bruta': confianza_modelo_bruta,
         'valor_prediccion': round(ratio_round / 100.0, 4),
         'todas_las_predicciones': [
-            {'clase': 'Area VIH sobre piel', 'probabilidad': ratio_round},
-            {'clase': 'Confianza media VIH (bruta)', 'probabilidad': confianza_modelo_bruta},
-            {'clase': 'Confianza media piel', 'probabilidad': round(float(skin_conf_mean) * 100.0, 2)},
+            {'clase': 'Porcentaje estimado de área afectada', 'probabilidad': ratio_round},
+            {'clase': 'Confianza media del modelo (bruta)', 'probabilidad': confianza_modelo_bruta},
+            {'clase': 'Confianza media de detección de piel', 'probabilidad': round(float(skin_conf_mean) * 100.0, 2)},
         ],
     }
 

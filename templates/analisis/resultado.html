@@ -16,9 +16,9 @@
                          class="img-fluid rounded" style="max-height: 300px;">
                 </div>
 
-                <!-- Diagnóstico principal -->
+                <!-- Resultado principal -->
                 <div class="col-md-7">
-                    <h5>Diagnóstico Principal</h5>
+                    <h5>Resultado del análisis</h5>
                     <div class="card-custom p-4 mb-3">
                         <h3 class="text-warning">{{ resultado.diagnostico }}</h3>
                         <div class="progress-bar-custom mt-3">
@@ -28,13 +28,13 @@
                             </div>
                         </div>
                         <small class="text-white-50 mt-2 d-block">
-                            Nivel de similitud / confianza del modelo
+                            Confianza del modelo
                         </small>
 
                         {% if resultado.ratio is not None %}
                         <hr class="my-3" style="border-color: rgba(255,255,255,0.2);">
-                        <p class="mb-1"><strong>Porcentaje de piel afectada por VIH:</strong> {{ resultado.ratio }}%</p>
-                        <p class="mb-1"><strong>Nivel:</strong> {{ resultado.nivel }}</p>
+                        <p class="mb-1"><strong>Porcentaje estimado de piel afectada:</strong> {{ resultado.ratio }}%</p>
+                        <p class="mb-1"><strong>Nivel estimado de afectación:</strong> {{ resultado.nivel }}</p>
                         <small class="text-white-50 d-block">{{ resultado.descripcion }}</small>
                         {% endif %}
                     </div>
@@ -45,12 +45,12 @@
             <h5 class="mb-3">🖼️ Visualización de Segmentación</h5>
             <div class="row mb-4">
                 <div class="col-md-4 text-center mb-3">
-                    <p class="mb-2">VIH (rojo)</p>
-                    <img src="{{ resultado.overlay_vih_path }}" alt="Overlay VIH" class="img-fluid rounded">
+                    <p class="mb-2">Patrón analizado (rojo)</p>
+                    <img src="{{ resultado.overlay_vih_path }}" alt="Overlay del patrón analizado" class="img-fluid rounded">
                 </div>
                 <div class="col-md-4 text-center mb-3">
-                    <p class="mb-2">Piel (naranja)</p>
-                    <img src="{{ resultado.overlay_skin_path }}" alt="Overlay piel" class="img-fluid rounded">
+                    <p class="mb-2">Área de piel (naranja)</p>
+                    <img src="{{ resultado.overlay_skin_path }}" alt="Overlay de piel" class="img-fluid rounded">
                 </div>
                 <div class="col-md-4 text-center mb-3">
                     <p class="mb-2">Combinado</p>
@@ -59,14 +59,14 @@
             </div>
 
             <div class="row mb-4">
-                <div class="col-md-4"><strong>VIH px:</strong> {{ resultado.vih_px }}</div>
-                <div class="col-md-4"><strong>Piel px:</strong> {{ resultado.skin_px }}</div>
-                <div class="col-md-4"><strong>Overlap px:</strong> {{ resultado.overlap_px }}</div>
+                <div class="col-md-4"><strong>Píxeles del patrón:</strong> {{ resultado.vih_px }}</div>
+                <div class="col-md-4"><strong>Píxeles de piel:</strong> {{ resultado.skin_px }}</div>
+                <div class="col-md-4"><strong>Píxeles coincidentes:</strong> {{ resultado.overlap_px }}</div>
             </div>
             {% endif %}
 
             <!-- Todas las predicciones -->
-            <h5 class="mb-3">📈 Similitud con todas las categorías</h5>
+            <h5 class="mb-3">📈 Métricas del modelo</h5>
             {% for pred in resultado.todas_las_predicciones %}
             <div class="mb-2">
                 <div class="d-flex justify-content-between">

@@ -299,7 +299,7 @@ class SubirImagenSupabaseIntegrationTests(TestCase):
         }
         mock_guardar_temporal.return_value = 'C:\\temp\\analisis.jpg'
         mock_predecir.return_value = {
-            'diagnostico': 'Positivo',
+            'diagnostico': 'Se identificaron características visuales compatibles con la categoría analizada.',
             'confianza': 91.2,
             'overlay_vih_file': {'filename': 'vih.png', 'content': b'vih', 'content_type': 'image/png'},
             'overlay_skin_file': {'filename': 'skin.png', 'content': b'skin', 'content_type': 'image/png'},
@@ -331,7 +331,7 @@ class SubirImagenSupabaseIntegrationTests(TestCase):
         self.assertEqual(analisis.overlay_vih_url, 'https://demo.supabase.co/storage/v1/object/public/VIH/overlays/vih-001.png')
         self.assertEqual(analisis.overlay_skin_storage_path, 'overlays/skin-001.png')
         self.assertEqual(analisis.overlay_combined_storage_path, 'overlays/combined-001.png')
-        self.assertEqual(analisis.resultado, 'Positivo')
+        self.assertEqual(analisis.resultado, 'Se identificaron características visuales compatibles con la categoría analizada.')
         self.assertEqual(analisis.confianza, 91.2)
         self.assertEqual(mock_upload_bytes.call_count, 3)
         self.assertEqual(mock_build_storage_path.call_count, 3)
